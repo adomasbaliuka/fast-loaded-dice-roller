@@ -9,3 +9,5 @@ build
 dist
 src/python/version.py
 VERSION
+cmake-build-debug
+cmake-build-release
