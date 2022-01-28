@@ -67,13 +67,52 @@ namespace FLDR {
      * @tparam int unsigned integer type.
      */
     template<typename Distribution, int distribution_size, unsigned long distribution_sum>
-    class FastLoadedDiceRoller {
-    private:
-        FastLoadedDiceRoller() = default; // this class is completely static! Do not construct!
-    public:
+    struct FastLoadedDiceRoller {
+        constexpr inline static int n{distribution_size};
+        constexpr inline static int m{distribution_sum};
+        constexpr inline static int k{ceil_log2(m)};
+        constexpr inline static int r{(1 << k) - m};
 
-        // something like a constexpr constructor...
-        static constexpr void init(Distribution distribution) {
+        const std::array<int, k> h;
+        const std::array<int, (n + 1) * k> H;
+
+        constexpr explicit FastLoadedDiceRoller(Distribution distribution) :
+                h(init(distribution).first),
+                H(init(distribution).second)
+        { }
+
+        template<typename FlipFunction>
+        constexpr int fldr_sample(FlipFunction flip) const {
+            if (n == 1) {
+                return 0;
+            }
+            // TODO check if `int` can (or should?!) be replaced by a larger integral type
+            int c = 0;
+            int d = 0;
+            while (true) {
+                bool b = flip(); // TODO check if this should be int or bool. (most likely makes no difference)
+                d = 2 * d + (1 - b);
+                if (d < h[c]) {
+                    int z = H[d * k + c];
+                    if (z < n) {
+                        return z;
+                    } else {
+                        d = 0;
+                        c = 0;
+                    }
+                } else {
+                    d = d - h[c];
+                    c = c + 1;
+                }
+            }
+        }
+
+    private:
+        // initialize the two arrays h and H
+        static constexpr auto init(Distribution distribution) {
+            std::array<int, k> h{};
+            std::array<int, (n + 1) * k> H{};
+
             int d{};
             for (int j = 0; j < k; j++) {
                 d = 0;
@@ -94,41 +133,9 @@ namespace FLDR {
                     d += 1;
                 }
             }
+
+            return std::make_pair(h, H);
         }
-
-        template<typename FlipFunction>
-        static constexpr int fldr_sample(FlipFunction flip) {
-            if (n == 1) {
-                return 0;
-            }
-
-            int c = 0;
-            int d = 0;
-            while (true) {
-                int b = flip();
-                d = 2 * d + (1 - b);
-                if (d < h[c]) {
-                    int z = H[d * k + c];
-                    if (z < n) {
-                        return z;
-                    } else {
-                        d = 0;
-                        c = 0;
-                    }
-                } else {
-                    d = d - h[c];
-                    c = c + 1;
-                }
-            }
-        }
-
-        constexpr inline static int n{distribution_size};
-        constexpr inline static int m{distribution_sum};
-        constexpr inline static int k{ceil_log2(m)};
-        constexpr inline static int r{(1 << k) - m};
-
-        static inline std::array<int, k> h;
-        static inline std::array<int, (n + 1) * k> H;
     };
 
 }

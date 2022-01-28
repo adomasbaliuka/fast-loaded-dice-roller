@@ -47,42 +47,40 @@ bool flip() {
 }
 
 
-
-
 TEST(fldr, basic_test) {
     constexpr int distribution_size = 0xFF;
 
     using FLDR = FastLoadedDiceRoller<decltype(distribution),
             distribution_size,
             sum_distribution(distribution, distribution_size)>;
-    FLDR::init(distribution);
+    constexpr FLDR fldr(distribution);
 
     constexpr std::size_t NUM_SAMPLES{10};
 
     std::vector<int> result;
 
     for (std::size_t i{}; i < NUM_SAMPLES; ++i) {
-        result.push_back(FLDR::fldr_sample(flip));
+        result.push_back(fldr.fldr_sample(flip));
     }
 
     EXPECT_EQ(result, (std::vector<int>{{49, 50, 193, 56, 182, 14, 158, 62, 166, 221} }));
 }
 
-TEST(fldr, bigger_test) {
 
-    constexpr int distribution_size = 0xFFFF;
+TEST(fldr, bigger_test) {
+    constexpr int distribution_size = 0xFF;
     using FLDR = FastLoadedDiceRoller<decltype(distribution),
             distribution_size,
             sum_distribution(distribution, distribution_size)>;
-    FLDR::init(distribution);
+    constexpr FLDR fldr(distribution);
 
     constexpr std::size_t NUM_SAMPLES{10'000'000};
 
     std::vector<int> result;
 
     for (std::size_t i{}; i < NUM_SAMPLES; ++i) {
-        result.push_back(FLDR::fldr_sample(flip));
+        result.push_back(fldr.fldr_sample(flip));
     }
 
-    EXPECT_EQ(std::accumulate(result.begin(), result.end(), 0l), 0);
+    EXPECT_EQ(std::accumulate(result.begin(), result.end(), 0UL), 0);
 }
